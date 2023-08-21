@@ -1,0 +1,10 @@
+ {
+		"nome": "Jose Carlos dos Santos",
+		"endereco": "Rua Barão de Aracati, 2050 - Apto 902",
+	  "compras" : [
+			{
+				"id" : "345a2dc2-fd0c-473b-943d-079151789ec7"
+				
+			}
+		]
+	}
