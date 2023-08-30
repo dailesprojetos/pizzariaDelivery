@@ -1,12 +1,9 @@
 package br.com.iwt.pizzaria.api.controller;
 
-import java.util.List;
 import java.util.UUID;
 
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -21,10 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import br.com.iwt.pizzaria.api.assembler.ClienteAssembler;
 import br.com.iwt.pizzaria.api.model.ClienteModel;
 import br.com.iwt.pizzaria.api.model.input.ClienteInput;
-import br.com.iwt.pizzaria.domain.model.Cliente;
+import br.com.iwt.pizzaria.domain.model.filter.ClienteFilter;
 import br.com.iwt.pizzaria.domain.service.CadastroClienteService;
 
 @RestController
@@ -34,64 +30,35 @@ public class ClienteController {
 	@Autowired
 	CadastroClienteService servico;
 	
-	@Autowired
-	ClienteAssembler assembler;
-	
 	@GetMapping
-	public ResponseEntity<Page<ClienteModel>> listarClientes(@PageableDefault(size=2) Pageable pageable){		
+	public ResponseEntity<Page<ClienteModel>> listarClientes(ClienteFilter filtro,@PageableDefault(size=2) Pageable pageable){		
 		
-		List<ClienteModel> clientes = assembler.toCollectionModel(servico.listarTodos(pageable));
-		
-		Page<ClienteModel> clientesModelPage = new PageImpl<>(clientes, pageable, clientes.size());
-		
-		return ResponseEntity.ok(clientesModelPage);
+		return ResponseEntity.ok(servico.listarTodos(filtro,pageable));
 	}
 	
 	@GetMapping("/{clienteId}")
 	public ResponseEntity<ClienteModel> listarCliente(@PathVariable UUID clienteId) {
-		Cliente clienteResposta = servico.listarPorId(clienteId).get();
 		
-		if(clienteResposta != null)	return ResponseEntity.ok(assembler.toModel(clienteResposta));
-		
-		return ResponseEntity.notFound().build();
+		return ResponseEntity.ok(servico.listarPorIdOrThrow(clienteId));
 	}
 	
 	@PostMapping
 	@ResponseStatus(HttpStatus.OK)
-	public ClienteInput adicionarCliente(@RequestBody ClienteInput clienteInput) {
+	public ClienteModel adicionarCliente(@RequestBody ClienteInput clienteInput) {
 		
-		servico.adicionar(assembler.toEntity(clienteInput));
-		
-		return clienteInput;
+		return servico.adicionar(clienteInput);
 	}
 	
 	@PutMapping("/{clienteId}")
-	public ResponseEntity<Cliente> atualizaCliente(@PathVariable UUID clienteId, @RequestBody ClienteInput clienteInput) {
+	public ResponseEntity<ClienteModel> atualizaCliente(@PathVariable UUID clienteId, @RequestBody ClienteInput clienteInput) {
 		
-		Cliente resposta = servico.listarPorId(clienteId).orElse(null);
-		
-		if(resposta != null) {
-			BeanUtils.copyProperties(clienteInput, resposta,"id","compras");
-			
-			servico.adicionar(resposta);
-			
-			return ResponseEntity.ok(resposta);
-		}
-		
-		return ResponseEntity.notFound().build();
+			return ResponseEntity.ok(servico.atualizarCliente(clienteId, clienteInput));
 	}
 	
 	@DeleteMapping("/{clienteId}")
-	public ResponseEntity<Cliente> deletaCliente(@PathVariable UUID clienteId){
+	@ResponseStatus(value = HttpStatus.NO_CONTENT)
+	public void deletaCliente(@PathVariable UUID clienteId){
 	
-		Cliente resposta = servico.listarPorId(clienteId).orElse(null);
-		
-		if(resposta != null) {
-			servico.deletar(resposta);
-			
-			return ResponseEntity.noContent().build();
-		}
-		
-		return ResponseEntity.notFound().build();
+		servico.deletar(clienteId);
 	}	
 }
